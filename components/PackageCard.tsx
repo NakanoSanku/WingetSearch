@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Copy, Check, Terminal, Plus, Minus, ExternalLink } from 'lucide-react';
+import { Copy, Check, Terminal, Plus, Minus, Github, Globe2 } from 'lucide-react';
 import { WingetPackage } from '../types';
 import { Button } from './Button';
 
@@ -9,13 +9,9 @@ interface PackageCardProps {
   onToggleBatch?: (id: string) => void;
 }
 
-const PROJECT_HOSTS = ['github.com', 'gitlab.com', 'codeberg.org', 'bitbucket.org', 'sourceforge.net'];
-
-const getLinkLabel = (url: string) => {
+const isGitHubUrl = (url: string) => {
   const hostname = new URL(url).hostname.toLowerCase();
-  return PROJECT_HOSTS.some(host => hostname === host || hostname.endsWith(`.${host}`))
-    ? 'Project'
-    : 'Website';
+  return hostname === 'github.com' || hostname.endsWith('.github.com');
 };
 
 export const PackageCard: React.FC<PackageCardProps> = ({ pkg, isSelected = false, onToggleBatch }) => {
@@ -23,7 +19,8 @@ export const PackageCard: React.FC<PackageCardProps> = ({ pkg, isSelected = fals
   const [showIcon, setShowIcon] = useState(Boolean(pkg.iconUrl));
   const installCommand = `winget install --id "${pkg.id}" --exact -s winget`;
   const packageLink = pkg.packageUrl ?? pkg.publisherUrl;
-  const packageLinkLabel = packageLink ? getLinkLabel(packageLink) : undefined;
+  const packageLinkIsGitHub = packageLink ? isGitHubUrl(packageLink) : false;
+  const packageLinkLabel = packageLinkIsGitHub ? 'Open GitHub project' : 'Open website';
 
   const handleCopy = () => {
     navigator.clipboard.writeText(installCommand);
@@ -44,37 +41,37 @@ export const PackageCard: React.FC<PackageCardProps> = ({ pkg, isSelected = fals
       )}
 
       <div className="mb-6">
-        <div className="flex justify-between items-start gap-4">
-          <div className="min-w-0 flex items-start gap-3">
-            {showIcon && pkg.iconUrl && (
-              <div className="w-11 h-11 shrink-0 rounded-xl border border-border/70 bg-white p-1.5 flex items-center justify-center overflow-hidden">
-                <img
-                  src={pkg.iconUrl}
-                  alt=""
-                  className="w-full h-full object-contain"
-                  loading="lazy"
-                  decoding="async"
-                  referrerPolicy="no-referrer"
-                  onError={() => setShowIcon(false)}
-                />
-              </div>
-            )}
-            <div className="min-w-0">
-              <h3 className="font-bold text-lg leading-snug break-words text-foreground">
-                {pkg.name || pkg.id}
-              </h3>
-              {pkg.name && pkg.name !== pkg.id && (
-                <p className="mt-1 font-mono text-[11px] leading-relaxed text-muted-foreground break-all">
-                  {pkg.id}
-                </p>
-              )}
+        <div className="min-w-0 flex items-start gap-3">
+          {showIcon && pkg.iconUrl && (
+            <div className="w-11 h-11 shrink-0 rounded-xl border border-border/70 bg-white p-1.5 flex items-center justify-center overflow-hidden">
+              <img
+                src={pkg.iconUrl}
+                alt=""
+                className="w-full h-full object-contain"
+                loading="lazy"
+                decoding="async"
+                referrerPolicy="no-referrer"
+                onError={() => setShowIcon(false)}
+              />
             </div>
+          )}
+          <div className="min-w-0">
+            <h3 className="font-bold text-lg leading-snug break-words text-foreground">
+              {pkg.name || pkg.id}
+            </h3>
+            {pkg.name && pkg.name !== pkg.id && (
+              <p className="mt-1 font-mono text-[11px] leading-relaxed text-muted-foreground break-all">
+                {pkg.id}
+              </p>
+            )}
           </div>
+        </div>
 
-          {/* Version Badge */}
-          <div className="shrink-0 flex items-center gap-2 px-3 py-1 rounded-full bg-muted/50 border border-border/50">
-            <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
-            <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
+        {/* Version Badge */}
+        <div className="mt-4 flex items-center">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-muted/50 border border-border/50">
+            <span className="w-1.5 h-1.5 rounded-full bg-accent" />
+            <span className="font-mono text-[10px] text-muted-foreground tabular-nums tracking-wider">
               {pkg.version}
             </span>
           </div>
@@ -82,19 +79,6 @@ export const PackageCard: React.FC<PackageCardProps> = ({ pkg, isSelected = fals
       </div>
 
       <div className="mt-auto space-y-4">
-        {packageLink && packageLinkLabel && (
-          <a
-            href={packageLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-accent hover:text-accent-secondary transition-colors"
-            title={`Open ${packageLinkLabel.toLowerCase()} for ${pkg.name || pkg.id}`}
-          >
-            <ExternalLink className="w-3.5 h-3.5" />
-            {packageLinkLabel}
-          </a>
-        )}
-
         {/* Code Snippet */}
         <div className="group/code relative rounded-lg bg-muted/50 border border-border p-3 font-mono text-xs text-muted-foreground flex items-center gap-3 overflow-hidden transition-colors hover:bg-muted hover:text-foreground">
           <Terminal className="w-3.5 h-3.5 shrink-0 text-accent" />
@@ -111,12 +95,27 @@ export const PackageCard: React.FC<PackageCardProps> = ({ pkg, isSelected = fals
             >
                 {copied ? "Copied" : "Copy"}
             </Button>
+
+            {packageLink && (
+                <a
+                    href={packageLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-10 h-10 shrink-0 flex items-center justify-center rounded-xl border bg-white text-muted-foreground border-border transition-all duration-200 hover:border-accent hover:text-accent active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+                    title={`${packageLinkLabel} for ${pkg.name || pkg.id}`}
+                    aria-label={`${packageLinkLabel} for ${pkg.name || pkg.id}`}
+                >
+                    {packageLinkIsGitHub
+                      ? <Github className="w-5 h-5" />
+                      : <Globe2 className="w-5 h-5" />}
+                </a>
+            )}
             
             {onToggleBatch && (
                 <button 
                     onClick={() => onToggleBatch(pkg.id)}
                     className={`
-                      w-10 h-10 flex items-center justify-center rounded-xl border transition-all duration-200
+                      w-10 h-10 shrink-0 flex items-center justify-center rounded-xl border transition-all duration-200 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2
                       ${isSelected 
                         ? 'bg-foreground text-white border-foreground hover:bg-foreground/90' 
                         : 'bg-white text-muted-foreground border-border hover:border-accent hover:text-accent'}
