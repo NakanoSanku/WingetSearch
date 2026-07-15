@@ -40,19 +40,8 @@ export const PackageCard: React.FC<PackageCardProps> = ({ pkg, isSelected = fals
         <div className="absolute inset-0 border-2 border-accent rounded-2xl pointer-events-none opacity-50" />
       )}
 
-      {/* Version Badge */}
-      <div
-        className="absolute top-6 right-6 z-10 max-w-28 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-muted/50 border border-border/50"
-        title={`Version ${pkg.version}`}
-      >
-        <span className="w-1.5 h-1.5 shrink-0 rounded-full bg-accent" />
-        <span className="min-w-0 truncate font-mono text-[10px] text-muted-foreground tabular-nums tracking-wider">
-          {pkg.version}
-        </span>
-      </div>
-
       <div className="mb-6">
-        <div className="min-w-0 flex items-start gap-3 pr-28">
+        <div className="min-w-0 flex items-start gap-3">
           {showIcon && pkg.iconUrl && (
             <div className="w-11 h-11 shrink-0 rounded-xl border border-border/70 bg-white p-1.5 flex items-center justify-center overflow-hidden">
               <img
@@ -127,6 +116,19 @@ export const PackageCard: React.FC<PackageCardProps> = ({ pkg, isSelected = fals
                     {isSelected ? <Minus className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
                 </button>
             )}
+        </div>
+
+        {/* Version Badge */}
+        <div className="flex justify-end">
+          <div
+            className="max-w-36 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-muted/50 border border-border/50"
+            title={`Version ${pkg.version}`}
+          >
+            <span className="w-1.5 h-1.5 shrink-0 rounded-full bg-accent" />
+            <span className="min-w-0 truncate font-mono text-[10px] text-muted-foreground tabular-nums tracking-wider">
+              {pkg.version}
+            </span>
+          </div>
         </div>
       </div>
     </div>
