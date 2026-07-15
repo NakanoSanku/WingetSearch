@@ -11,6 +11,7 @@ interface PackageCardProps {
 
 export const PackageCard: React.FC<PackageCardProps> = ({ pkg, isSelected = false, onToggleBatch }) => {
   const [copied, setCopied] = useState(false);
+  const [showIcon, setShowIcon] = useState(Boolean(pkg.iconUrl));
   const installCommand = `winget install --id "${pkg.id}" --exact -s winget`;
 
   const handleCopy = () => {
@@ -33,15 +34,30 @@ export const PackageCard: React.FC<PackageCardProps> = ({ pkg, isSelected = fals
 
       <div className="mb-6">
         <div className="flex justify-between items-start gap-4">
-          <div className="min-w-0">
-            <h3 className="font-bold text-lg leading-snug break-words text-foreground">
-              {pkg.name || pkg.id}
-            </h3>
-            {pkg.name && pkg.name !== pkg.id && (
-              <p className="mt-1 font-mono text-[11px] leading-relaxed text-muted-foreground break-all">
-                {pkg.id}
-              </p>
+          <div className="min-w-0 flex items-start gap-3">
+            {showIcon && pkg.iconUrl && (
+              <div className="w-11 h-11 shrink-0 rounded-xl border border-border/70 bg-white p-1.5 flex items-center justify-center overflow-hidden">
+                <img
+                  src={pkg.iconUrl}
+                  alt=""
+                  className="w-full h-full object-contain"
+                  loading="lazy"
+                  decoding="async"
+                  referrerPolicy="no-referrer"
+                  onError={() => setShowIcon(false)}
+                />
+              </div>
             )}
+            <div className="min-w-0">
+              <h3 className="font-bold text-lg leading-snug break-words text-foreground">
+                {pkg.name || pkg.id}
+              </h3>
+              {pkg.name && pkg.name !== pkg.id && (
+                <p className="mt-1 font-mono text-[11px] leading-relaxed text-muted-foreground break-all">
+                  {pkg.id}
+                </p>
+              )}
+            </div>
           </div>
 
           {/* Version Badge */}

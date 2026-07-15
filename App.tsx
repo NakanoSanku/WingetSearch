@@ -21,6 +21,33 @@ function useDebounce<T>(value: T, delay: number): T {
 
 const ITEMS_PER_PAGE = 24;
 
+const normalizeSearchValue = (value: string) => value.toLowerCase().trim();
+const compactSearchValue = (value: string) => normalizeSearchValue(value).replace(/[^a-z0-9]/g, '');
+
+const getSearchScore = (pkg: WingetPackage, term: string) => {
+  const id = normalizeSearchValue(pkg.id);
+  const name = normalizeSearchValue(pkg.name ?? '');
+  const moniker = normalizeSearchValue(pkg.moniker ?? '');
+  const compactTerm = compactSearchValue(term);
+  const compactId = compactSearchValue(id);
+  const compactName = compactSearchValue(name);
+
+  if (id === term) return 0;
+  if (moniker === term) return 1;
+  if (name === term) return 2;
+  if (compactId === compactTerm || compactName === compactTerm) return 3;
+  if (id.startsWith(term)) return 4;
+  if (moniker.startsWith(term)) return 5;
+  if (name.startsWith(term)) return 6;
+  if (id.includes(term)) return 7;
+  if (moniker.includes(term)) return 8;
+  if (name.includes(term)) return 9;
+  if (compactId.includes(compactTerm) || compactName.includes(compactTerm)) return 10;
+  if (pkg.tags?.some(tag => normalizeSearchValue(tag).includes(term))) return 11;
+
+  return null;
+};
+
 const App: React.FC = () => {
   const [packages, setPackages] = useState<WingetPackage[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -52,13 +79,17 @@ const App: React.FC = () => {
   };
 
   const filteredPackages = useMemo(() => {
-    if (!debouncedSearchTerm) return packages;
-    const lowerTerm = debouncedSearchTerm.toLowerCase();
-    return packages.filter(pkg => 
-      pkg.id.toLowerCase().includes(lowerTerm) ||
-      pkg.name?.toLowerCase().includes(lowerTerm) ||
-      pkg.tags?.some(tag => tag.toLowerCase().includes(lowerTerm))
-    );
+    const term = normalizeSearchValue(debouncedSearchTerm);
+    if (!term) return packages;
+
+    return packages
+      .map(pkg => ({ pkg, score: getSearchScore(pkg, term) }))
+      .filter((result): result is { pkg: WingetPackage; score: number } => result.score !== null)
+      .sort((a, b) =>
+        a.score - b.score ||
+        (a.pkg.name ?? a.pkg.id).localeCompare(b.pkg.name ?? b.pkg.id)
+      )
+      .map(result => result.pkg);
   }, [packages, debouncedSearchTerm]);
 
   useEffect(() => {
@@ -138,7 +169,7 @@ const App: React.FC = () => {
           
           <div className="flex flex-col items-start lg:items-end gap-6">
              <div className="flex flex-wrap gap-4">
-                <a href="https://github.com/svrooij/winget-pkgs-index" target="_blank" rel="noopener noreferrer">
+                <a href="https://github.com/NakanoSanku/winget-pkgs-index" target="_blank" rel="noopener noreferrer">
                     <Button variant="secondary" icon={<Github className="w-4 h-4" />}>
                         Source
                     </Button>

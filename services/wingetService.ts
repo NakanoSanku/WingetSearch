@@ -1,11 +1,14 @@
 import { WingetPackage } from "../types";
 
-const INDEX_URL = 'https://cdn.jsdelivr.net/gh/svrooij/winget-pkgs-index@main/index.v2.json';
+const INDEX_URL = 'https://cdn.jsdelivr.net/gh/NakanoSanku/winget-pkgs-index@main/index.v2.json';
 
 interface WingetIndexEntry {
   Name?: unknown;
   PackageId?: unknown;
   Version?: unknown;
+  Moniker?: unknown;
+  IconUrl?: unknown;
+  IconSource?: unknown;
   Tags?: unknown;
   LastUpdate?: unknown;
 }
@@ -31,6 +34,9 @@ export const fetchPackages = async (): Promise<WingetPackage[]> => {
         id: entry.PackageId,
         version: entry.Version,
         name: typeof entry.Name === 'string' ? entry.Name : undefined,
+        moniker: typeof entry.Moniker === 'string' ? entry.Moniker : undefined,
+        iconUrl: typeof entry.IconUrl === 'string' ? entry.IconUrl : undefined,
+        iconSource: typeof entry.IconSource === 'string' ? entry.IconSource : undefined,
         tags: Array.isArray(entry.Tags)
           ? entry.Tags.filter((tag): tag is string => typeof tag === 'string')
           : [],
