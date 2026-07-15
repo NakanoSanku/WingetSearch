@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Package, Search, AlertCircle, RefreshCw, Github, Upload, Info } from 'lucide-react';
+import { Package, Search, AlertCircle, RefreshCw, Github, ListChecks } from 'lucide-react';
 import { WingetPackage } from './types';
 import { fetchPackages } from './services/wingetService';
 import { PackageCard } from './components/PackageCard';
@@ -7,8 +7,7 @@ import { Pagination } from './components/Pagination';
 import { Input } from './components/Input';
 import { Button } from './components/Button';
 import { InstallPrompt } from './components/InstallPrompt';
-import { BatchDrawer } from './components/BatchDrawer';
-import { BatchModal } from './components/BatchModal';
+import { SelectionSidebar } from './components/SelectionSidebar';
 
 // Utility for debouncing
 function useDebounce<T>(value: T, delay: number): T {
@@ -22,6 +21,33 @@ function useDebounce<T>(value: T, delay: number): T {
 
 const ITEMS_PER_PAGE = 24;
 
+const normalizeSearchValue = (value: string) => value.toLowerCase().trim();
+const compactSearchValue = (value: string) => normalizeSearchValue(value).replace(/[^a-z0-9]/g, '');
+
+const getSearchScore = (pkg: WingetPackage, term: string) => {
+  const id = normalizeSearchValue(pkg.id);
+  const name = normalizeSearchValue(pkg.name ?? '');
+  const moniker = normalizeSearchValue(pkg.moniker ?? '');
+  const compactTerm = compactSearchValue(term);
+  const compactId = compactSearchValue(id);
+  const compactName = compactSearchValue(name);
+
+  if (id === term) return 0;
+  if (moniker === term) return 1;
+  if (name === term) return 2;
+  if (compactId === compactTerm || compactName === compactTerm) return 3;
+  if (id.startsWith(term)) return 4;
+  if (moniker.startsWith(term)) return 5;
+  if (name.startsWith(term)) return 6;
+  if (id.includes(term)) return 7;
+  if (moniker.includes(term)) return 8;
+  if (name.includes(term)) return 9;
+  if (compactId.includes(compactTerm) || compactName.includes(compactTerm)) return 10;
+  if (pkg.tags?.some(tag => normalizeSearchValue(tag).includes(term))) return 11;
+
+  return null;
+};
+
 const App: React.FC = () => {
   const [packages, setPackages] = useState<WingetPackage[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -31,7 +57,7 @@ const App: React.FC = () => {
   
   // Batch selection state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
+  const [isInstallListOpen, setIsInstallListOpen] = useState(false);
 
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
@@ -53,11 +79,17 @@ const App: React.FC = () => {
   };
 
   const filteredPackages = useMemo(() => {
-    if (!debouncedSearchTerm) return packages;
-    const lowerTerm = debouncedSearchTerm.toLowerCase();
-    return packages.filter(pkg => 
-      pkg.id.toLowerCase().includes(lowerTerm)
-    );
+    const term = normalizeSearchValue(debouncedSearchTerm);
+    if (!term) return packages;
+
+    return packages
+      .map(pkg => ({ pkg, score: getSearchScore(pkg, term) }))
+      .filter((result): result is { pkg: WingetPackage; score: number } => result.score !== null)
+      .sort((a, b) =>
+        a.score - b.score ||
+        (a.pkg.name ?? a.pkg.id).localeCompare(b.pkg.name ?? b.pkg.id)
+      )
+      .map(result => result.pkg);
   }, [packages, debouncedSearchTerm]);
 
   useEffect(() => {
@@ -70,30 +102,42 @@ const App: React.FC = () => {
     return filteredPackages.slice(start, start + ITEMS_PER_PAGE);
   }, [filteredPackages, currentPage]);
 
+  const packageById = useMemo(
+    () => new Map(packages.map(pkg => [pkg.id, pkg])),
+    [packages]
+  );
+
+  const selectedPackages = useMemo(
+    () => Array.from(selectedIds, id => packageById.get(id) ?? { id, version: 'Unknown' }),
+    [selectedIds, packageById]
+  );
+
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.requestAnimationFrame(() => {
+      document.getElementById('package-search')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    });
   };
 
   const toggleBatch = (id: string) => {
-    const newSelected = new Set(selectedIds);
-    if (newSelected.has(id)) {
-      newSelected.delete(id);
-    } else {
-      newSelected.add(id);
-    }
-    setSelectedIds(newSelected);
-  };
-
-  const handleBatchImport = (importedIds: string[]) => {
-    const newSelected = new Set(selectedIds);
-    importedIds.forEach(id => newSelected.add(id));
-    setSelectedIds(newSelected);
+    setIsInstallListOpen(true);
+    setSelectedIds(current => {
+      const next = new Set(current);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
   };
 
   const clearBatch = () => {
     setSelectedIds(new Set());
-    setIsBatchModalOpen(false);
+    setIsInstallListOpen(false);
   };
 
   return (
@@ -125,15 +169,7 @@ const App: React.FC = () => {
           
           <div className="flex flex-col items-start lg:items-end gap-6">
              <div className="flex flex-wrap gap-4">
-                <Button 
-                    variant="outline" 
-                    onClick={() => setIsBatchModalOpen(true)}
-                    className="backdrop-blur-sm bg-white/50"
-                    icon={<Upload className="w-4 h-4" />}
-                >
-                    Config
-                </Button>
-                <a href="https://github.com/svrooij/winget-pkgs-index" target="_blank" rel="noopener noreferrer">
+                <a href="https://github.com/NakanoSanku/winget-pkgs-index" target="_blank" rel="noopener noreferrer">
                     <Button variant="secondary" icon={<Github className="w-4 h-4" />}>
                         Source
                     </Button>
@@ -160,7 +196,7 @@ const App: React.FC = () => {
         <InstallPrompt />
 
         {/* Search Section */}
-        <div className="mb-16 relative z-20">
+        <div id="package-search" className="mb-16 relative z-20 scroll-mt-6">
              <Input 
                placeholder="Search packages (e.g. 'Chrome', 'NodeJS')..." 
                value={searchTerm}
@@ -171,7 +207,7 @@ const App: React.FC = () => {
         </div>
 
         {/* Content Area */}
-        <div className="min-h-[400px]">
+        <div className="min-h-[400px] min-w-0">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-32 space-y-6">
                <div className="relative w-16 h-16">
@@ -226,6 +262,29 @@ const App: React.FC = () => {
         </div>
       </main>
 
+      <SelectionSidebar
+        packages={selectedPackages}
+        isOpen={isInstallListOpen}
+        onClose={() => setIsInstallListOpen(false)}
+        onRemove={toggleBatch}
+        onClear={clearBatch}
+      />
+
+      {selectedIds.size > 0 && !isInstallListOpen && (
+        <button
+          type="button"
+          onClick={() => setIsInstallListOpen(true)}
+          className="fixed right-4 bottom-4 sm:right-6 sm:bottom-6 z-40 h-12 px-4 rounded-full bg-foreground text-white shadow-2xl flex items-center gap-3 hover:bg-slate-800 transition-colors"
+          aria-label={`Open installation list with ${selectedIds.size} selected packages`}
+        >
+          <ListChecks className="w-5 h-5 text-accent-secondary" />
+          <span className="text-sm font-semibold">Install List</span>
+          <span className="min-w-6 h-6 px-1.5 rounded-full bg-accent flex items-center justify-center text-xs font-bold">
+            {selectedIds.size}
+          </span>
+        </button>
+      )}
+
       {/* Footer */}
       <footer className="border-t border-border bg-white mt-20 relative z-10">
         <div className="container mx-auto px-4 py-12 md:py-16">
@@ -251,21 +310,6 @@ const App: React.FC = () => {
             </div>
         </div>
       </footer>
-
-      {/* Batch Components */}
-      <BatchDrawer 
-        count={selectedIds.size} 
-        onClear={clearBatch} 
-        onGenerate={() => setIsBatchModalOpen(true)} 
-      />
-      
-      <BatchModal 
-        isOpen={isBatchModalOpen} 
-        onClose={() => setIsBatchModalOpen(false)} 
-        ids={Array.from(selectedIds)} 
-        onRemove={toggleBatch}
-        onImport={handleBatchImport}
-      />
 
     </div>
   );

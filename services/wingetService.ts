@@ -1,41 +1,50 @@
 import { WingetPackage } from "../types";
 
-const CSV_URL = 'https://cdn.jsdelivr.net/gh/svrooij/winget-pkgs-index@main/index.csv';
+const INDEX_URL = 'https://cdn.jsdelivr.net/gh/NakanoSanku/winget-pkgs-index@main/index.v2.json';
+
+interface WingetIndexEntry {
+  Name?: unknown;
+  PackageId?: unknown;
+  Version?: unknown;
+  Moniker?: unknown;
+  IconUrl?: unknown;
+  IconSource?: unknown;
+  Tags?: unknown;
+  LastUpdate?: unknown;
+}
 
 export const fetchPackages = async (): Promise<WingetPackage[]> => {
   try {
-    const response = await fetch(CSV_URL);
+    const response = await fetch(INDEX_URL);
     if (!response.ok) {
       throw new Error(`Failed to fetch data: ${response.statusText}`);
     }
-    const csvText = await response.text();
-    return parseCSV(csvText);
+
+    const data: unknown = await response.json();
+    if (!Array.isArray(data)) {
+      throw new Error('Invalid Winget index format: expected an array.');
+    }
+
+    return data.flatMap((entry: WingetIndexEntry): WingetPackage[] => {
+      if (typeof entry.PackageId !== 'string' || typeof entry.Version !== 'string') {
+        return [];
+      }
+
+      return [{
+        id: entry.PackageId,
+        version: entry.Version,
+        name: typeof entry.Name === 'string' ? entry.Name : undefined,
+        moniker: typeof entry.Moniker === 'string' ? entry.Moniker : undefined,
+        iconUrl: typeof entry.IconUrl === 'string' ? entry.IconUrl : undefined,
+        iconSource: typeof entry.IconSource === 'string' ? entry.IconSource : undefined,
+        tags: Array.isArray(entry.Tags)
+          ? entry.Tags.filter((tag): tag is string => typeof tag === 'string')
+          : [],
+        lastUpdate: typeof entry.LastUpdate === 'string' ? entry.LastUpdate : undefined,
+      }];
+    });
   } catch (error) {
     console.error("Error fetching packages:", error);
     throw error;
   }
-};
-
-const parseCSV = (csvText: string): WingetPackage[] => {
-  const lines = csvText.split('\n');
-  const packages: WingetPackage[] = [];
-
-  // Start from 1 to skip header "PackageId","Version"
-  for (let i = 1; i < lines.length; i++) {
-    const line = lines[i].trim();
-    if (!line) continue;
-
-    // Basic CSV regex for "Val1","Val2" format
-    // This is performant enough for simple structured data like this specific file
-    const match = line.match(/^"(.+)","(.+)"$/);
-    
-    if (match && match.length === 3) {
-      packages.push({
-        id: match[1],
-        version: match[2]
-      });
-    }
-  }
-
-  return packages;
 };
