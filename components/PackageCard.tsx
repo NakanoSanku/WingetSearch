@@ -21,6 +21,7 @@ export const PackageCard: React.FC<PackageCardProps> = ({ pkg, isSelected = fals
   const packageLink = pkg.packageUrl ?? pkg.publisherUrl;
   const packageLinkIsGitHub = packageLink ? isGitHubUrl(packageLink) : false;
   const packageLinkLabel = packageLinkIsGitHub ? 'Open GitHub project' : 'Open website';
+  const displayVersion = pkg.version.toLowerCase().startsWith('v') ? pkg.version : `v${pkg.version}`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(installCommand);
@@ -118,17 +119,14 @@ export const PackageCard: React.FC<PackageCardProps> = ({ pkg, isSelected = fals
             )}
         </div>
 
-        {/* Version Badge */}
+        {/* Version Label */}
         <div className="flex justify-end">
-          <div
-            className="max-w-36 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-muted/50 border border-border/50"
+          <span
+            className="max-w-full truncate text-lg font-medium leading-none text-muted-foreground/40 tabular-nums tracking-tight"
             title={`Version ${pkg.version}`}
           >
-            <span className="w-1.5 h-1.5 shrink-0 rounded-full bg-accent" />
-            <span className="min-w-0 truncate font-mono text-[10px] text-muted-foreground tabular-nums tracking-wider">
-              {pkg.version}
-            </span>
-          </div>
+            {displayVersion}
+          </span>
         </div>
       </div>
     </div>
