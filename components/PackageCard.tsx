@@ -11,10 +11,10 @@ interface PackageCardProps {
 
 export const PackageCard: React.FC<PackageCardProps> = ({ pkg, isSelected = false, onToggleBatch }) => {
   const [copied, setCopied] = useState(false);
+  const installCommand = `winget install --id "${pkg.id}" --exact`;
 
   const handleCopy = () => {
-    const command = `winget install ${pkg.id}`;
-    navigator.clipboard.writeText(command);
+    navigator.clipboard.writeText(installCommand);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -58,7 +58,7 @@ export const PackageCard: React.FC<PackageCardProps> = ({ pkg, isSelected = fals
         {/* Code Snippet */}
         <div className="group/code relative rounded-lg bg-muted/50 border border-border p-3 font-mono text-xs text-muted-foreground flex items-center gap-3 overflow-hidden transition-colors hover:bg-muted hover:text-foreground">
           <Terminal className="w-3.5 h-3.5 shrink-0 text-accent" />
-          <span className="select-all truncate">winget install {pkg.id}</span>
+          <span className="select-all truncate">{installCommand}</span>
         </div>
         
         <div className="flex gap-3">

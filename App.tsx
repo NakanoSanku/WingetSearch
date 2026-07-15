@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Package, Search, AlertCircle, RefreshCw, Github, Upload, Info } from 'lucide-react';
+import { Package, Search, AlertCircle, RefreshCw, Github, ListChecks } from 'lucide-react';
 import { WingetPackage } from './types';
 import { fetchPackages } from './services/wingetService';
 import { PackageCard } from './components/PackageCard';
@@ -7,8 +7,7 @@ import { Pagination } from './components/Pagination';
 import { Input } from './components/Input';
 import { Button } from './components/Button';
 import { InstallPrompt } from './components/InstallPrompt';
-import { BatchDrawer } from './components/BatchDrawer';
-import { BatchModal } from './components/BatchModal';
+import { SelectionSidebar } from './components/SelectionSidebar';
 
 // Utility for debouncing
 function useDebounce<T>(value: T, delay: number): T {
@@ -31,7 +30,6 @@ const App: React.FC = () => {
   
   // Batch selection state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
 
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
@@ -70,30 +68,35 @@ const App: React.FC = () => {
     return filteredPackages.slice(start, start + ITEMS_PER_PAGE);
   }, [filteredPackages, currentPage]);
 
+  const packageById = useMemo(
+    () => new Map(packages.map(pkg => [pkg.id, pkg])),
+    [packages]
+  );
+
+  const selectedPackages = useMemo(
+    () => Array.from(selectedIds, id => packageById.get(id) ?? { id, version: 'Unknown' }),
+    [selectedIds, packageById]
+  );
+
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const toggleBatch = (id: string) => {
-    const newSelected = new Set(selectedIds);
-    if (newSelected.has(id)) {
-      newSelected.delete(id);
-    } else {
-      newSelected.add(id);
-    }
-    setSelectedIds(newSelected);
-  };
-
-  const handleBatchImport = (importedIds: string[]) => {
-    const newSelected = new Set(selectedIds);
-    importedIds.forEach(id => newSelected.add(id));
-    setSelectedIds(newSelected);
+    setSelectedIds(current => {
+      const next = new Set(current);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
   };
 
   const clearBatch = () => {
     setSelectedIds(new Set());
-    setIsBatchModalOpen(false);
   };
 
   return (
@@ -127,11 +130,11 @@ const App: React.FC = () => {
              <div className="flex flex-wrap gap-4">
                 <Button 
                     variant="outline" 
-                    onClick={() => setIsBatchModalOpen(true)}
+                    onClick={() => document.getElementById('install-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
                     className="backdrop-blur-sm bg-white/50"
-                    icon={<Upload className="w-4 h-4" />}
+                    icon={<ListChecks className="w-4 h-4" />}
                 >
-                    Config
+                    Install List {selectedIds.size > 0 ? `(${selectedIds.size})` : ''}
                 </Button>
                 <a href="https://github.com/svrooij/winget-pkgs-index" target="_blank" rel="noopener noreferrer">
                     <Button variant="secondary" icon={<Github className="w-4 h-4" />}>
@@ -171,8 +174,9 @@ const App: React.FC = () => {
         </div>
 
         {/* Content Area */}
-        <div className="min-h-[400px]">
-          {loading ? (
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_360px] gap-8 items-start">
+          <div className="min-h-[400px] min-w-0">
+            {loading ? (
             <div className="flex flex-col items-center justify-center py-32 space-y-6">
                <div className="relative w-16 h-16">
                   <div className="absolute inset-0 border-4 border-muted rounded-full"></div>
@@ -200,7 +204,7 @@ const App: React.FC = () => {
           ) : (
             <>
               {/* Results Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {currentPackages.map((pkg) => (
                   <PackageCard 
                     key={pkg.id} 
@@ -222,7 +226,14 @@ const App: React.FC = () => {
                 Viewing {currentPage} / {totalPages}
               </div>
             </>
-          )}
+            )}
+          </div>
+
+          <SelectionSidebar
+            packages={selectedPackages}
+            onRemove={toggleBatch}
+            onClear={clearBatch}
+          />
         </div>
       </main>
 
@@ -251,21 +262,6 @@ const App: React.FC = () => {
             </div>
         </div>
       </footer>
-
-      {/* Batch Components */}
-      <BatchDrawer 
-        count={selectedIds.size} 
-        onClear={clearBatch} 
-        onGenerate={() => setIsBatchModalOpen(true)} 
-      />
-      
-      <BatchModal 
-        isOpen={isBatchModalOpen} 
-        onClose={() => setIsBatchModalOpen(false)} 
-        ids={Array.from(selectedIds)} 
-        onRemove={toggleBatch}
-        onImport={handleBatchImport}
-      />
 
     </div>
   );
