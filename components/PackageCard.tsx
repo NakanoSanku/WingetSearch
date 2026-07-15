@@ -40,8 +40,19 @@ export const PackageCard: React.FC<PackageCardProps> = ({ pkg, isSelected = fals
         <div className="absolute inset-0 border-2 border-accent rounded-2xl pointer-events-none opacity-50" />
       )}
 
+      {/* Version Badge */}
+      <div
+        className="absolute top-6 right-6 z-10 max-w-28 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-muted/50 border border-border/50"
+        title={`Version ${pkg.version}`}
+      >
+        <span className="w-1.5 h-1.5 shrink-0 rounded-full bg-accent" />
+        <span className="min-w-0 truncate font-mono text-[10px] text-muted-foreground tabular-nums tracking-wider">
+          {pkg.version}
+        </span>
+      </div>
+
       <div className="mb-6">
-        <div className="min-w-0 flex items-start gap-3">
+        <div className="min-w-0 flex items-start gap-3 pr-28">
           {showIcon && pkg.iconUrl && (
             <div className="w-11 h-11 shrink-0 rounded-xl border border-border/70 bg-white p-1.5 flex items-center justify-center overflow-hidden">
               <img
@@ -67,15 +78,6 @@ export const PackageCard: React.FC<PackageCardProps> = ({ pkg, isSelected = fals
           </div>
         </div>
 
-        {/* Version Badge */}
-        <div className="mt-4 flex items-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-muted/50 border border-border/50">
-            <span className="w-1.5 h-1.5 rounded-full bg-accent" />
-            <span className="font-mono text-[10px] text-muted-foreground tabular-nums tracking-wider">
-              {pkg.version}
-            </span>
-          </div>
-        </div>
       </div>
 
       <div className="mt-auto space-y-4">
@@ -89,7 +91,7 @@ export const PackageCard: React.FC<PackageCardProps> = ({ pkg, isSelected = fals
             <Button 
                 onClick={handleCopy} 
                 variant={copied ? "primary" : "secondary"} 
-                className="flex-1 h-10"
+                className="flex-1 !h-10 !rounded-xl hover:!translate-y-0"
                 size="sm"
                 icon={copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
             >
