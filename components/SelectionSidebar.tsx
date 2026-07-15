@@ -84,7 +84,14 @@ export const SelectionSidebar: React.FC<SelectionSidebarProps> = ({ packages, is
                   {String(index + 1).padStart(2, '0')}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-foreground break-all leading-snug">{pkg.id}</p>
+                  <p className="text-sm font-semibold text-foreground break-words leading-snug">
+                    {pkg.name || pkg.id}
+                  </p>
+                  {pkg.name && pkg.name !== pkg.id && (
+                    <p className="font-mono text-[10px] text-muted-foreground mt-1 break-all">
+                      {pkg.id}
+                    </p>
+                  )}
                   <p className="font-mono text-[10px] text-muted-foreground mt-1">v{pkg.version}</p>
                 </div>
                 <button
