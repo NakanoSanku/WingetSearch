@@ -84,7 +84,7 @@ const App: React.FC = () => {
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
     window.requestAnimationFrame(() => {
-      document.getElementById('package-results')?.scrollIntoView({
+      document.getElementById('package-search')?.scrollIntoView({
         behavior: 'smooth',
         block: 'start',
       });
@@ -165,7 +165,7 @@ const App: React.FC = () => {
         <InstallPrompt />
 
         {/* Search Section */}
-        <div className="mb-16 relative z-20">
+        <div id="package-search" className="mb-16 relative z-20 scroll-mt-6">
              <Input 
                placeholder="Search packages (e.g. 'Chrome', 'NodeJS')..." 
                value={searchTerm}
@@ -176,7 +176,7 @@ const App: React.FC = () => {
         </div>
 
         {/* Content Area */}
-        <div id="package-results" className="min-h-[400px] min-w-0 scroll-mt-6">
+        <div className="min-h-[400px] min-w-0">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-32 space-y-6">
                <div className="relative w-16 h-16">
