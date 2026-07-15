@@ -131,14 +131,6 @@ const App: React.FC = () => {
           
           <div className="flex flex-col items-start lg:items-end gap-6">
              <div className="flex flex-wrap gap-4">
-                <Button 
-                    variant="outline" 
-                    onClick={() => setIsInstallListOpen(true)}
-                    className="backdrop-blur-sm bg-white/50"
-                    icon={<ListChecks className="w-4 h-4" />}
-                >
-                    Install List {selectedIds.size > 0 ? `(${selectedIds.size})` : ''}
-                </Button>
                 <a href="https://github.com/svrooij/winget-pkgs-index" target="_blank" rel="noopener noreferrer">
                     <Button variant="secondary" icon={<Github className="w-4 h-4" />}>
                         Source

@@ -11,19 +11,19 @@ interface SelectionSidebarProps {
   onClear: () => void;
 }
 
-const buildInstallScript = (packages: WingetPackage[]) => {
+const buildInstallCommand = (packages: WingetPackage[]) => {
   const packageList = packages
-    .map(pkg => `  "${pkg.id.replace(/"/g, '`"')}"`)
-    .join('\r\n');
+    .map(pkg => `"${pkg.id.replace(/"/g, '`"')}"`)
+    .join(', ');
 
-  return `$packages = @(\r\n${packageList}\r\n)\r\n\r\nforeach ($package in $packages) {\r\n  winget install --id $package --exact --source winget --accept-package-agreements --accept-source-agreements\r\n}`;
+  return `@(${packageList}) | ForEach-Object { winget install --id $_ --exact --source winget --accept-package-agreements --accept-source-agreements }`;
 };
 
 export const SelectionSidebar: React.FC<SelectionSidebarProps> = ({ packages, isOpen, onClose, onRemove, onClear }) => {
   const [copied, setCopied] = useState(false);
 
   const installCommands = useMemo(
-    () => buildInstallScript(packages),
+    () => buildInstallCommand(packages),
     [packages]
   );
 
@@ -103,9 +103,9 @@ export const SelectionSidebar: React.FC<SelectionSidebarProps> = ({ packages, is
             <div>
               <div className="flex items-center gap-2 mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 <Terminal className="w-3.5 h-3.5 text-accent" />
-                PowerShell command
+                PowerShell one-liner
               </div>
-              <pre className="max-h-[28vh] overflow-auto rounded-xl bg-slate-950 p-3 text-[10px] leading-relaxed text-blue-200 whitespace-pre-wrap break-all">
+              <pre className="overflow-x-auto rounded-xl bg-slate-950 p-3 text-[10px] leading-relaxed text-blue-200 whitespace-pre">
                 {installCommands}
               </pre>
             </div>
@@ -117,7 +117,7 @@ export const SelectionSidebar: React.FC<SelectionSidebarProps> = ({ packages, is
               onClick={handleCopy}
               icon={copied ? <Check className="w-4 h-4" /> : <ClipboardCopy className="w-4 h-4" />}
             >
-              {copied ? 'Script copied' : 'Copy PowerShell script'}
+              {copied ? 'Command copied' : 'Copy command'}
             </Button>
       </div>
     </aside>
