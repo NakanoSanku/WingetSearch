@@ -83,7 +83,12 @@ const App: React.FC = () => {
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.requestAnimationFrame(() => {
+      document.getElementById('package-results')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    });
   };
 
   const toggleBatch = (id: string) => {
@@ -171,7 +176,7 @@ const App: React.FC = () => {
         </div>
 
         {/* Content Area */}
-        <div className="min-h-[400px] min-w-0">
+        <div id="package-results" className="min-h-[400px] min-w-0 scroll-mt-6">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-32 space-y-6">
                <div className="relative w-16 h-16">
