@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Copy, Check, Terminal, Box, Plus, Minus } from 'lucide-react';
+import { Copy, Check, Terminal, Plus, Minus } from 'lucide-react';
 import { WingetPackage } from '../types';
 import { Button } from './Button';
 
@@ -32,26 +32,26 @@ export const PackageCard: React.FC<PackageCardProps> = ({ pkg, isSelected = fals
       )}
 
       <div className="mb-6">
-        <div className="flex justify-between items-start gap-4 mb-4">
-          <div className={`
-            p-3 rounded-xl transition-colors duration-300
-            ${isSelected ? 'bg-accent text-white' : 'bg-muted text-foreground group-hover:bg-gradient-to-br group-hover:from-accent group-hover:to-accent-secondary group-hover:text-white'}
-          `}>
-             <Box className="w-6 h-6" strokeWidth={2} />
+        <div className="flex justify-between items-start gap-4">
+          <div className="min-w-0">
+            <h3 className="font-bold text-lg leading-snug break-words text-foreground">
+              {pkg.name || pkg.id}
+            </h3>
+            {pkg.name && pkg.name !== pkg.id && (
+              <p className="mt-1 font-mono text-[11px] leading-relaxed text-muted-foreground break-all">
+                {pkg.id}
+              </p>
+            )}
           </div>
-          
+
           {/* Version Badge */}
-          <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-muted/50 border border-border/50">
+          <div className="shrink-0 flex items-center gap-2 px-3 py-1 rounded-full bg-muted/50 border border-border/50">
             <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
             <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
               {pkg.version}
             </span>
           </div>
         </div>
-
-        <h3 className="font-bold text-lg leading-snug break-all text-foreground mb-1">
-          {pkg.id}
-        </h3>
       </div>
 
       <div className="mt-auto space-y-4">
