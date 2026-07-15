@@ -1,6 +1,6 @@
 import { WingetPackage } from "../types";
 
-const INDEX_URL = 'https://cdn.jsdelivr.net/gh/NakanoSanku/winget-pkgs-index@main/index.v2.json';
+const INDEX_URL = 'https://raw.githubusercontent.com/NakanoSanku/winget-pkgs-index/main/index.v2.json';
 
 interface WingetIndexEntry {
   Name?: unknown;
@@ -9,9 +9,22 @@ interface WingetIndexEntry {
   Moniker?: unknown;
   IconUrl?: unknown;
   IconSource?: unknown;
+  PackageUrl?: unknown;
+  PublisherUrl?: unknown;
   Tags?: unknown;
   LastUpdate?: unknown;
 }
+
+const parseHttpUrl = (value: unknown): string | undefined => {
+  if (typeof value !== 'string') return undefined;
+
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : undefined;
+  } catch {
+    return undefined;
+  }
+};
 
 export const fetchPackages = async (): Promise<WingetPackage[]> => {
   try {
@@ -37,6 +50,8 @@ export const fetchPackages = async (): Promise<WingetPackage[]> => {
         moniker: typeof entry.Moniker === 'string' ? entry.Moniker : undefined,
         iconUrl: typeof entry.IconUrl === 'string' ? entry.IconUrl : undefined,
         iconSource: typeof entry.IconSource === 'string' ? entry.IconSource : undefined,
+        packageUrl: parseHttpUrl(entry.PackageUrl),
+        publisherUrl: parseHttpUrl(entry.PublisherUrl),
         tags: Array.isArray(entry.Tags)
           ? entry.Tags.filter((tag): tag is string => typeof tag === 'string')
           : [],
