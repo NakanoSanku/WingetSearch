@@ -11,7 +11,7 @@ interface PackageCardProps {
 
 export const PackageCard: React.FC<PackageCardProps> = ({ pkg, isSelected = false, onToggleBatch }) => {
   const [copied, setCopied] = useState(false);
-  const installCommand = `winget install --id "${pkg.id}" --exact`;
+  const installCommand = `winget install --id "${pkg.id}" --exact -s winget`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(installCommand);

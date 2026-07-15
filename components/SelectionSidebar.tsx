@@ -16,7 +16,7 @@ const buildInstallCommand = (packages: WingetPackage[]) => {
     .map(pkg => `"${pkg.id.replace(/"/g, '`"')}"`)
     .join(', ');
 
-  return `@(${packageList}) | ForEach-Object { winget install --id $_ --exact --source winget --accept-package-agreements --accept-source-agreements }`;
+  return `@(${packageList}) | ForEach-Object { winget install --id $_ --exact -s winget --accept-package-agreements --accept-source-agreements }`;
 };
 
 export const SelectionSidebar: React.FC<SelectionSidebarProps> = ({ packages, isOpen, onClose, onRemove, onClear }) => {
