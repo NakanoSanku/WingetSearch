@@ -30,6 +30,7 @@ const App: React.FC = () => {
   
   // Batch selection state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isInstallListOpen, setIsInstallListOpen] = useState(false);
 
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
@@ -84,6 +85,7 @@ const App: React.FC = () => {
   };
 
   const toggleBatch = (id: string) => {
+    setIsInstallListOpen(true);
     setSelectedIds(current => {
       const next = new Set(current);
       if (next.has(id)) {
@@ -97,6 +99,7 @@ const App: React.FC = () => {
 
   const clearBatch = () => {
     setSelectedIds(new Set());
+    setIsInstallListOpen(false);
   };
 
   return (
@@ -130,7 +133,7 @@ const App: React.FC = () => {
              <div className="flex flex-wrap gap-4">
                 <Button 
                     variant="outline" 
-                    onClick={() => document.getElementById('install-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                    onClick={() => setIsInstallListOpen(true)}
                     className="backdrop-blur-sm bg-white/50"
                     icon={<ListChecks className="w-4 h-4" />}
                 >
@@ -174,9 +177,8 @@ const App: React.FC = () => {
         </div>
 
         {/* Content Area */}
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_360px] gap-8 items-start">
-          <div className="min-h-[400px] min-w-0">
-            {loading ? (
+        <div className="min-h-[400px] min-w-0">
+          {loading ? (
             <div className="flex flex-col items-center justify-center py-32 space-y-6">
                <div className="relative w-16 h-16">
                   <div className="absolute inset-0 border-4 border-muted rounded-full"></div>
@@ -204,7 +206,7 @@ const App: React.FC = () => {
           ) : (
             <>
               {/* Results Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {currentPackages.map((pkg) => (
                   <PackageCard 
                     key={pkg.id} 
@@ -226,16 +228,32 @@ const App: React.FC = () => {
                 Viewing {currentPage} / {totalPages}
               </div>
             </>
-            )}
-          </div>
-
-          <SelectionSidebar
-            packages={selectedPackages}
-            onRemove={toggleBatch}
-            onClear={clearBatch}
-          />
+          )}
         </div>
       </main>
+
+      <SelectionSidebar
+        packages={selectedPackages}
+        isOpen={isInstallListOpen}
+        onClose={() => setIsInstallListOpen(false)}
+        onRemove={toggleBatch}
+        onClear={clearBatch}
+      />
+
+      {selectedIds.size > 0 && !isInstallListOpen && (
+        <button
+          type="button"
+          onClick={() => setIsInstallListOpen(true)}
+          className="fixed right-4 bottom-4 sm:right-6 sm:bottom-6 z-40 h-12 px-4 rounded-full bg-foreground text-white shadow-2xl flex items-center gap-3 hover:bg-slate-800 transition-colors"
+          aria-label={`Open installation list with ${selectedIds.size} selected packages`}
+        >
+          <ListChecks className="w-5 h-5 text-accent-secondary" />
+          <span className="text-sm font-semibold">Install List</span>
+          <span className="min-w-6 h-6 px-1.5 rounded-full bg-accent flex items-center justify-center text-xs font-bold">
+            {selectedIds.size}
+          </span>
+        </button>
+      )}
 
       {/* Footer */}
       <footer className="border-t border-border bg-white mt-20 relative z-10">
