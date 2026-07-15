@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Copy, Check, Terminal, Plus, Minus } from 'lucide-react';
+import { Copy, Check, Terminal, Plus, Minus, ExternalLink } from 'lucide-react';
 import { WingetPackage } from '../types';
 import { Button } from './Button';
 
@@ -9,10 +9,21 @@ interface PackageCardProps {
   onToggleBatch?: (id: string) => void;
 }
 
+const PROJECT_HOSTS = ['github.com', 'gitlab.com', 'codeberg.org', 'bitbucket.org', 'sourceforge.net'];
+
+const getLinkLabel = (url: string) => {
+  const hostname = new URL(url).hostname.toLowerCase();
+  return PROJECT_HOSTS.some(host => hostname === host || hostname.endsWith(`.${host}`))
+    ? 'Project'
+    : 'Website';
+};
+
 export const PackageCard: React.FC<PackageCardProps> = ({ pkg, isSelected = false, onToggleBatch }) => {
   const [copied, setCopied] = useState(false);
   const [showIcon, setShowIcon] = useState(Boolean(pkg.iconUrl));
   const installCommand = `winget install --id "${pkg.id}" --exact -s winget`;
+  const packageLink = pkg.packageUrl ?? pkg.publisherUrl;
+  const packageLinkLabel = packageLink ? getLinkLabel(packageLink) : undefined;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(installCommand);
@@ -71,6 +82,19 @@ export const PackageCard: React.FC<PackageCardProps> = ({ pkg, isSelected = fals
       </div>
 
       <div className="mt-auto space-y-4">
+        {packageLink && packageLinkLabel && (
+          <a
+            href={packageLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-accent hover:text-accent-secondary transition-colors"
+            title={`Open ${packageLinkLabel.toLowerCase()} for ${pkg.name || pkg.id}`}
+          >
+            <ExternalLink className="w-3.5 h-3.5" />
+            {packageLinkLabel}
+          </a>
+        )}
+
         {/* Code Snippet */}
         <div className="group/code relative rounded-lg bg-muted/50 border border-border p-3 font-mono text-xs text-muted-foreground flex items-center gap-3 overflow-hidden transition-colors hover:bg-muted hover:text-foreground">
           <Terminal className="w-3.5 h-3.5 shrink-0 text-accent" />

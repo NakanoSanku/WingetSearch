@@ -5,6 +5,8 @@ export interface WingetPackage {
   moniker?: string;
   iconUrl?: string;
   iconSource?: string;
+  packageUrl?: string;
+  publisherUrl?: string;
   tags?: string[];
   lastUpdate?: string;
 }
