@@ -55,7 +55,9 @@ const App: React.FC = () => {
     if (!debouncedSearchTerm) return packages;
     const lowerTerm = debouncedSearchTerm.toLowerCase();
     return packages.filter(pkg => 
-      pkg.id.toLowerCase().includes(lowerTerm)
+      pkg.id.toLowerCase().includes(lowerTerm) ||
+      pkg.name?.toLowerCase().includes(lowerTerm) ||
+      pkg.tags?.some(tag => tag.toLowerCase().includes(lowerTerm))
     );
   }, [packages, debouncedSearchTerm]);
 
