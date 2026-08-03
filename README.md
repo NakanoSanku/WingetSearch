@@ -23,7 +23,9 @@ Winget Search 是一个面向 Windows 用户的非官方 WinGet 软件目录和�
 - 在数据可用时提供 GitHub 项目或官方网站入口。
 - 一键复制单个应用的精确安装命令。
 - 将多个应用加入右侧悬浮安装清单。
-- 生成一条单行 PowerShell 批量安装命令。
+- 生成可以直接粘贴到 PowerShell 执行的批量安装代码块。
+- 在每张应用卡片中独立选择版本，默认使用 WinGet 最新版本。
+- 通过结构化命令选项面板统一设置单个和批量命令的 WinGet 参数。
 - 支持分页，并在翻页后自动返回搜索区域。
 - 图标加载失败时自动隐藏，不显示无意义的占位图标。
 
@@ -54,24 +56,41 @@ developer-tools
 每张应用卡片都会提供可以直接复制的命令：
 
 ```powershell
-winget install --id "Microsoft.VisualStudioCode" --exact -s winget
+winget install --id "Microsoft.VisualStudioCode" --exact --source winget --accept-package-agreements --accept-source-agreements
 ```
 
 其中：
 
 - `--id` 指定唯一的 WinGet Package ID。
 - `--exact` 要求 Package ID 精确匹配，避免安装到相似名称的软件包。
-- `-s winget` 明确使用官方 WinGet 软件源。
+- `--source winget` 明确使用官方 WinGet 软件源。
+
+每张应用卡片的 `Version` 下拉框默认是 `Latest`，不会添加 `--version`。选择历史版本后，只为该应用追加对应的精确版本参数，例如：
+
+```powershell
+winget install --id "Microsoft.VisualStudioCode" --exact --source winget --version "1.2.3" --accept-package-agreements --accept-source-agreements
+```
+
+在搜索结果上方打开 `Command options` 面板，可以通过安装模式、下拉选项、开关和专用值输入框设置 `--scope`、`--architecture`、`--installer-type`、`--silent`、`--no-upgrade` 等参数。所有命令统一使用长参数格式，固定的 `--id`、`--exact` 和 `--source winget` 不会被覆盖。
 
 ### 批量安装应用
 
-将需要的软件加入安装清单后，网站会生成单行 PowerShell 命令：
+将需要的软件加入安装清单后，网站会生成可以直接粘贴到 PowerShell 执行的代码块，不需要保存成 `.ps1` 文件：
 
 ```powershell
-@("Microsoft.VisualStudioCode", "Git.Git", "Google.Chrome") | ForEach-Object { winget install --id $_ --exact -s winget --accept-package-agreements --accept-source-agreements }
+@(
+  [pscustomobject]@{ Id = 'Git.Git'; Version = '2.49.0' }
+  [pscustomobject]@{ Id = 'Microsoft.VisualStudioCode'; Version = $null }
+) | ForEach-Object {
+  $wingetArgs = @('--id', $_.Id, '--exact', '--source', 'winget')
+  if ($_.Version) { $wingetArgs += @('--version', $_.Version) }
+  $wingetArgs += '--accept-package-agreements'
+  $wingetArgs += '--accept-source-agreements'
+  & winget install @wingetArgs
+}
 ```
 
-这条命令会依次安装清单中的应用，并自动接受软件包与软件源协议。执行前仍建议确认每个 Package ID 是否符合预期。
+代码块会按安装清单顺序安装应用，每个应用可以使用独立版本。执行前仍建议确认 Package ID、版本和命令选项是否符合预期。
 
 ## 数据来源
 
@@ -88,6 +107,7 @@ https://raw.githubusercontent.com/NakanoSanku/winget-pkgs-index/main/index.v2.js
 | `Name` | 应用显示名称 |
 | `PackageId` | WinGet 唯一软件包 ID |
 | `Version` | 最新版本 |
+| `Versions` | 可用版本列表，按最新到最旧排序 |
 | `Moniker` | 常用简称，例如 `vscode` |
 | `Tags` | 搜索标签 |
 | `IconUrl` | 应用图标地址 |

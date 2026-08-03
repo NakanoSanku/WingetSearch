@@ -6,6 +6,7 @@ interface WingetIndexEntry {
   Name?: unknown;
   PackageId?: unknown;
   Version?: unknown;
+  Versions?: unknown;
   Moniker?: unknown;
   IconUrl?: unknown;
   IconSource?: unknown;
@@ -46,6 +47,9 @@ export const fetchPackages = async (): Promise<WingetPackage[]> => {
       return [{
         id: entry.PackageId,
         version: entry.Version,
+        versions: Array.isArray(entry.Versions)
+          ? entry.Versions.filter((version): version is string => typeof version === 'string')
+          : [],
         name: typeof entry.Name === 'string' ? entry.Name : undefined,
         moniker: typeof entry.Moniker === 'string' ? entry.Moniker : undefined,
         iconUrl: typeof entry.IconUrl === 'string' ? entry.IconUrl : undefined,

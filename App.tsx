@@ -1,13 +1,15 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { Package, Search, AlertCircle, RefreshCw, Github, ListChecks } from 'lucide-react';
-import { WingetPackage } from './types';
+import { WingetCommandOptions, WingetPackage } from './types';
 import { fetchPackages } from './services/wingetService';
+import { DEFAULT_WINGET_COMMAND_OPTIONS } from './services/wingetCommand';
 import { PackageCard } from './components/PackageCard';
 import { Pagination } from './components/Pagination';
 import { Input } from './components/Input';
 import { Button } from './components/Button';
 import { InstallPrompt } from './components/InstallPrompt';
 import { SelectionSidebar } from './components/SelectionSidebar';
+import { CommandOptionsPanel } from './components/CommandOptionsPanel';
 
 // Utility for debouncing
 function useDebounce<T>(value: T, delay: number): T {
@@ -57,7 +59,12 @@ const App: React.FC = () => {
   
   // Batch selection state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [selectedVersions, setSelectedVersions] = useState<Record<string, string>>({});
   const [isInstallListOpen, setIsInstallListOpen] = useState(false);
+  const [isCommandOptionsOpen, setIsCommandOptionsOpen] = useState(false);
+  const [commandOptions, setCommandOptions] = useState<WingetCommandOptions>(() => ({
+    ...DEFAULT_WINGET_COMMAND_OPTIONS,
+  }));
 
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
@@ -108,8 +115,11 @@ const App: React.FC = () => {
   );
 
   const selectedPackages = useMemo(
-    () => Array.from(selectedIds, id => packageById.get(id) ?? { id, version: 'Unknown' }),
-    [selectedIds, packageById]
+    () => Array.from(selectedIds, id => ({
+      ...(packageById.get(id) ?? { id, version: 'Unknown' }),
+      selectedVersion: selectedVersions[id] ?? '',
+    })),
+    [selectedIds, selectedVersions, packageById]
   );
 
   const handlePageChange = (page: number) => {
@@ -124,6 +134,7 @@ const App: React.FC = () => {
 
   const toggleBatch = (id: string) => {
     setIsInstallListOpen(true);
+    const isCurrentlySelected = selectedIds.has(id);
     setSelectedIds(current => {
       const next = new Set(current);
       if (next.has(id)) {
@@ -133,10 +144,33 @@ const App: React.FC = () => {
       }
       return next;
     });
+
+    if (isCurrentlySelected) {
+      setSelectedVersions(current => {
+        if (!(id in current)) return current;
+        const next = { ...current };
+        delete next[id];
+        return next;
+      });
+    }
+  };
+
+  const handleVersionChange = (id: string, version: string) => {
+    setSelectedVersions(current => {
+      if (!version) {
+        if (!(id in current)) return current;
+        const next = { ...current };
+        delete next[id];
+        return next;
+      }
+
+      return { ...current, [id]: version };
+    });
   };
 
   const clearBatch = () => {
     setSelectedIds(new Set());
+    setSelectedVersions({});
     setIsInstallListOpen(false);
   };
 
@@ -195,6 +229,14 @@ const App: React.FC = () => {
         {/* Call to Action / Install Prompt */}
         <InstallPrompt />
 
+        <CommandOptionsPanel
+          options={commandOptions}
+          isOpen={isCommandOptionsOpen}
+          onToggle={() => setIsCommandOptionsOpen(current => !current)}
+          onChange={setCommandOptions}
+          onReset={() => setCommandOptions({ ...DEFAULT_WINGET_COMMAND_OPTIONS })}
+        />
+
         {/* Search Section */}
         <div id="package-search" className="mb-16 relative z-20 scroll-mt-6">
              <Input 
@@ -241,6 +283,9 @@ const App: React.FC = () => {
                   <PackageCard 
                     key={pkg.id} 
                     pkg={pkg} 
+                    selectedVersion={selectedVersions[pkg.id] ?? ''}
+                    onVersionChange={handleVersionChange}
+                    installOptions={commandOptions}
                     isSelected={selectedIds.has(pkg.id)}
                     onToggleBatch={toggleBatch}
                   />
@@ -264,6 +309,7 @@ const App: React.FC = () => {
 
       <SelectionSidebar
         packages={selectedPackages}
+        installOptions={commandOptions}
         isOpen={isInstallListOpen}
         onClose={() => setIsInstallListOpen(false)}
         onRemove={toggleBatch}
