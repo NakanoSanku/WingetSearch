@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from 'react';
-import { Check, ClipboardCopy, ListChecks, PanelRightClose, Terminal, Trash2, X } from 'lucide-react';
+import { Check, ClipboardCopy, ListChecks, PanelRightClose, Share2, Terminal, Trash2, X } from 'lucide-react';
 import { SelectedWingetPackage, WingetCommandOptions } from '../types';
 import { Button } from './Button';
 import { buildBatchInstallCommand } from '../services/wingetCommand';
+import { MAX_RECOMMENDATION_PACKAGES } from '../services/recommendationService';
 
 interface SelectionSidebarProps {
   packages: SelectedWingetPackage[];
@@ -11,9 +12,10 @@ interface SelectionSidebarProps {
   onClose: () => void;
   onRemove: (id: string) => void;
   onClear: () => void;
+  onShare: () => void;
 }
 
-export const SelectionSidebar: React.FC<SelectionSidebarProps> = ({ packages, installOptions, isOpen, onClose, onRemove, onClear }) => {
+export const SelectionSidebar: React.FC<SelectionSidebarProps> = ({ packages, installOptions, isOpen, onClose, onRemove, onClear, onShare }) => {
   const [copied, setCopied] = useState(false);
 
   const installCommands = useMemo(
@@ -33,7 +35,7 @@ export const SelectionSidebar: React.FC<SelectionSidebarProps> = ({ packages, in
   return (
     <aside
       id="install-list"
-      className="fixed z-50 top-20 right-4 sm:top-24 sm:right-6 w-[calc(100vw-2rem)] sm:w-[360px] max-h-[calc(100vh-6rem)] rounded-2xl border border-border bg-white shadow-2xl ring-1 ring-black/5 overflow-hidden"
+      className="fixed z-50 top-20 right-4 sm:top-24 sm:right-6 w-[calc(100vw-2rem)] sm:w-[360px] max-h-[calc(100dvh-7rem)] rounded-2xl border border-border bg-white shadow-2xl ring-1 ring-black/5 overflow-y-auto"
       aria-label="Current installation list"
     >
       <div className="bg-foreground text-white p-5">
@@ -108,7 +110,7 @@ export const SelectionSidebar: React.FC<SelectionSidebarProps> = ({ packages, in
                 <Terminal className="w-3.5 h-3.5 text-accent" />
                 PowerShell paste-ready script
               </div>
-              <pre className="overflow-x-auto rounded-xl bg-slate-950 p-3 text-[10px] leading-relaxed text-blue-200 whitespace-pre">
+              <pre className="max-h-40 overflow-auto rounded-xl bg-slate-950 p-3 text-[10px] leading-relaxed text-blue-200 whitespace-pre">
                 {installCommands}
               </pre>
             </div>
@@ -122,6 +124,11 @@ export const SelectionSidebar: React.FC<SelectionSidebarProps> = ({ packages, in
             >
               {copied ? 'Command copied' : 'Copy command'}
             </Button>
+            <Button type="button" variant="secondary" className="w-full" onClick={onShare}
+              disabled={packages.length > MAX_RECOMMENDATION_PACKAGES} icon={<Share2 className="w-4 h-4" />}>
+              Create recommendation list
+            </Button>
+            {packages.length > MAX_RECOMMENDATION_PACKAGES && <p className="text-xs text-muted-foreground">Share up to {MAX_RECOMMENDATION_PACKAGES} packages per list.</p>}
       </div>
     </aside>
   );

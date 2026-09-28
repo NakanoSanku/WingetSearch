@@ -26,6 +26,8 @@ Winget Search 是一个面向 Windows 用户的非官方 WinGet 软件目录和�
 - 生成可以直接粘贴到 PowerShell 执行的批量安装代码块。
 - 在每张应用卡片中独立选择版本，默认使用 WinGet 最新版本。
 - 通过结构化命令选项面板统一设置单个和批量命令的 WinGet 参数。
+- 从安装清单生成推荐清单，填写标题、作者、简介和每个软件的可选推荐理由，导出 JSON 文件供社区分享。
+- 导入推荐清单文件或粘贴 JSON，查看推荐理由、选择软件和版本，再加入安装清单。
 - 支持分页，并在翻页后自动返回搜索区域。
 - 图标加载失败时自动隐藏，不显示无意义的占位图标。
 
@@ -91,6 +93,51 @@ winget install --id "Microsoft.VisualStudioCode" --exact --source winget --versi
 ```
 
 代码块会按安装清单顺序安装应用，每个应用可以使用独立版本。执行前仍建议确认 Package ID、版本和命令选项是否符合预期。
+
+### 分享推荐清单
+
+1. 搜索并将软件加入 `Install List`。
+2. 在 `Community lists` 点击 `Create list`，或在安装清单中点击 `Create recommendation list`。
+3. 填写清单标题；作者、简介和每个软件的推荐理由均可留空。可从推荐草稿中移除软件，不影响原安装清单。
+4. 推荐版本默认是 `Latest available`，即使安装清单中已指定版本也不会自动沿用。如需固定版本，在编辑器中为对应软件单独选择。
+5. 点击 `Preview list` 查看接收者视角，或点击 `Export JSON` 下载清单文件，并通过群聊、论坛等渠道分享。
+
+首版通过文件分享，文件仅在浏览器中处理。关闭弹窗后可通过 `Reopen draft` 或 `Reopen imported list` 继续查看当前清单；草稿和安装选择只保留在当前页面会话中，刷新前请导出保存。
+
+### 导入并选择性安装
+
+1. 在 `Community lists` 点击 `Import list`，选择推荐 JSON 文件，也可以展开 `Or paste recommendation JSON` 粘贴内容。
+2. 查看标题、作者、简介和各软件的推荐理由。导入后默认不勾选任何软件。
+3. 逐项勾选，或使用 `Select available` 全选当前可以添加的软件。需要时调整安装版本。
+4. 点击 `Add … to install list`，关闭推荐弹窗，在安装清单中检查并复制 PowerShell 命令，在本机执行。
+
+导入后采用以下规则：
+
+- 软件 ID 与当前索引匹配，名称以索引为准。索引未加载成功时可以阅读清单，需恢复索引后才能添加软件。
+- 索引中找不到的软件保留展示并标注，不可勾选。
+- 作者固定的版本若已不可用，必须明确选择 `Latest` 或其他可用版本后才能勾选，不自动替换。
+- 已在安装清单中的软件标记为已添加，保留原来的版本和命令选项。
+- 接收者对版本和勾选的修改只影响自己的安装选择；重新导出导入文件仍保留作者的原始推荐。
+- 重复软件 ID 不区分大小写，保留第一条并展示提示。
+
+### 推荐文件格式
+
+示例文件：[开发工具入门清单](./examples/developer-tools.recommendations.json)。推荐文件使用本项目的版本化 JSON 格式，包含推荐理由等信息，与 WinGet CLI 的原生 `winget export` 文件不同。
+
+```json
+{
+  "format": "winget-search-recommendations",
+  "schemaVersion": 1,
+  "title": "我的开发工具",
+  "createdAt": "2026-09-28T00:00:00.000Z",
+  "packages": [
+    { "id": "Git.Git", "reason": "用于代码版本管理" },
+    { "id": "Microsoft.VisualStudioCode" }
+  ]
+}
+```
+
+`title`、`createdAt` 和非空 `packages` 必填；`author`、`description` 以及条目的 `name`、`reason`、`version` 可选。省略 `version` 表示最新版。文件最多 1 MB、200 个条目；标题最多 120 字符、作者 100 字符、简介 2000 字符、单条理由 1000 字符。未知格式版本和格式错误会显示具体错误，不修改安装清单。推荐理由按纯文本展示，文件中的自定义命令、下载地址和安装参数不会参与命令生成。
 
 ## 数据来源
 
@@ -165,12 +212,15 @@ http://localhost:3000
 
 项目当前不需要 API Key、数据库或其他环境变量。
 
-### 类型检查和生产构建
+### 测试、类型检查和生产构建
 
 ```powershell
+pnpm test
 pnpm exec tsc --noEmit
 pnpm build
 ```
+
+测试使用 Node.js 内置测试运行器，覆盖推荐文件往返、输入边界、重复处理、版本失效、选择性添加和 PowerShell 参数转义。
 
 ### 预览生产构建
 
@@ -199,13 +249,17 @@ pnpm dlx vercel@latest --prod
 
 ```text
 WingetSearch/
-├─ components/               # 卡片、搜索框、分页和安装清单组件
+├─ components/               # 卡片、搜索框、安装清单和推荐清单组件
+├─ examples/                 # 可直接导入的推荐清单示例
 ├─ public/                   # favicon 和 Web App Manifest
 ├─ services/
-│  └─ wingetService.ts       # 下载并转换 WinGet 索引
+│  ├─ wingetService.ts       # 下载并转换 WinGet 索引
+│  ├─ wingetCommand.ts       # PowerShell 命令生成
+│  └─ recommendationService.ts # 推荐清单校验、序列化与软件匹配
 ├─ App.tsx                   # 搜索、排序、分页和清单状态
 ├─ index.tsx                 # React 入口
 ├─ types.ts                  # 公共类型
+├─ CONTEXT.md                # 推荐与安装领域术语
 ├─ index.html                # 页面元数据与全局样式配置
 └─ vite.config.ts            # Vite 配置
 ```

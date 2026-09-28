@@ -1,4 +1,4 @@
-import { SelectedWingetPackage, WingetCommandOptions } from '../types';
+import type { SelectedWingetPackage, WingetCommandOptions } from '../types';
 
 export const DEFAULT_WINGET_COMMAND_OPTIONS: WingetCommandOptions = {
   installMode: 'default',
@@ -24,7 +24,7 @@ interface WingetArgument {
 }
 
 const escapePowerShellDoubleQuotedValue = (value: string) =>
-  value.replace(/`/g, '``').replace(/"/g, '`"');
+  value.replace(/`/g, '``').replace(/\$/g, '`$').replace(/"/g, '`"');
 
 const quotePowerShellValue = (value: string) =>
   `"${escapePowerShellDoubleQuotedValue(value)}"`;

@@ -36,6 +36,23 @@ export interface SelectedWingetPackage extends WingetPackage {
   selectedVersion: string;
 }
 
+export interface RecommendationPackage {
+  id: string;
+  name?: string;
+  version?: string;
+  reason?: string;
+}
+
+export interface RecommendationList {
+  format: 'winget-search-recommendations';
+  schemaVersion: 1;
+  title: string;
+  author?: string;
+  description?: string;
+  createdAt: string;
+  packages: RecommendationPackage[];
+}
+
 export interface PaginationProps {
   currentPage: number;
   totalPages: number;

@@ -1,0 +1,20 @@
+{
+  "format": "winget-search-recommendations",
+  "schemaVersion": 1,
+  "title": "开发工具入门清单",
+  "author": "Winget Search 示例",
+  "description": "按自己的需要勾选软件，默认安装 WinGet 最新可用版本。",
+  "createdAt": "2026-09-28T00:00:00.000Z",
+  "packages": [
+    {
+      "id": "Git.Git",
+      "name": "Git",
+      "reason": "用于代码版本管理，也方便从社区获取开源项目。"
+    },
+    {
+      "id": "Microsoft.VisualStudioCode",
+      "name": "Visual Studio Code",
+      "reason": "轻量的代码编辑器，可以根据开发语言安装需要的扩展。"
+    }
+  ]
+}

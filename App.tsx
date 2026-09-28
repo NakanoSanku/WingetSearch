@@ -1,6 +1,6 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { Package, Search, AlertCircle, RefreshCw, Github, ListChecks } from 'lucide-react';
-import { WingetCommandOptions, WingetPackage } from './types';
+import { SelectedWingetPackage, WingetCommandOptions, WingetPackage } from './types';
 import { fetchPackages } from './services/wingetService';
 import { DEFAULT_WINGET_COMMAND_OPTIONS } from './services/wingetCommand';
 import { PackageCard } from './components/PackageCard';
@@ -10,6 +10,7 @@ import { Button } from './components/Button';
 import { InstallPrompt } from './components/InstallPrompt';
 import { SelectionSidebar } from './components/SelectionSidebar';
 import { CommandOptionsPanel } from './components/CommandOptionsPanel';
+import { RecommendationLists, RecommendationListsHandle } from './components/RecommendationLists';
 
 // Utility for debouncing
 function useDebounce<T>(value: T, delay: number): T {
@@ -62,6 +63,7 @@ const App: React.FC = () => {
   const [selectedVersions, setSelectedVersions] = useState<Record<string, string>>({});
   const [isInstallListOpen, setIsInstallListOpen] = useState(false);
   const [isCommandOptionsOpen, setIsCommandOptionsOpen] = useState(false);
+  const recommendationListsRef = useRef<RecommendationListsHandle>(null);
   const [commandOptions, setCommandOptions] = useState<WingetCommandOptions>(() => ({
     ...DEFAULT_WINGET_COMMAND_OPTIONS,
   }));
@@ -174,6 +176,27 @@ const App: React.FC = () => {
     setIsInstallListOpen(false);
   };
 
+  const addRecommendations = (incoming: SelectedWingetPackage[]) => {
+    // Import is additive. Existing selections keep their locally chosen versions.
+    const existing = new Set(Array.from(selectedIds, (id: string) => id.toLowerCase()));
+    const additions = incoming.filter(pkg => {
+      if (existing.has(pkg.id.toLowerCase())) return false;
+      existing.add(pkg.id.toLowerCase());
+      return true;
+    });
+    if (!additions.length) return;
+    setSelectedIds(current => new Set([...current, ...additions.map(pkg => pkg.id)]));
+    setSelectedVersions(current => {
+      const next = { ...current };
+      additions.forEach(pkg => {
+        if (pkg.selectedVersion) next[pkg.id] = pkg.selectedVersion;
+        else delete next[pkg.id];
+      });
+      return next;
+    });
+    setIsInstallListOpen(true);
+  };
+
   return (
     <div className="min-h-screen relative overflow-x-hidden text-foreground">
       {/* Ambient Gradient Glows */}
@@ -228,6 +251,17 @@ const App: React.FC = () => {
         
         {/* Call to Action / Install Prompt */}
         <InstallPrompt />
+
+        <RecommendationLists
+          ref={recommendationListsRef}
+          packages={packages}
+          selectedPackages={selectedPackages}
+          selectedIds={selectedIds}
+          loading={loading}
+          indexError={error}
+          onOpen={() => setIsInstallListOpen(false)}
+          onAdd={addRecommendations}
+        />
 
         <CommandOptionsPanel
           options={commandOptions}
@@ -314,6 +348,7 @@ const App: React.FC = () => {
         onClose={() => setIsInstallListOpen(false)}
         onRemove={toggleBatch}
         onClear={clearBatch}
+        onShare={() => recommendationListsRef.current?.createFromSelection()}
       />
 
       {selectedIds.size > 0 && !isInstallListOpen && (
